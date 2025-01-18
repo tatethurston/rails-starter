@@ -1,0 +1,29 @@
+on:
+  pull_request:
+    types: [opened, synchronize, closed]
+    paths:
+      - .github/workflows/infrastructure.yml
+      - infrastructure/**
+permissions:
+  pull-requests: write
+  id-token: write
+  contents: read
+jobs:
+  terraform-plan:
+    if: github.event.action == 'opened' || github.event.action == 'synchronize'
+    name: "Terraform Plan"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infrastructure
+    steps:
+      - uses: tatethurston/github-actions/terraform/plan@main
+  terraform-apply:
+    if: github.event.action == 'closed' && github.event.pull_request.merged == true
+    name: "Terraform Apply"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infrastructure
+    steps:
+      - uses: tatethurston/github-actions/terraform/apply@main
