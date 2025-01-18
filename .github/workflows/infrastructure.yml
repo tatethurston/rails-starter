@@ -8,22 +8,37 @@ permissions:
   pull-requests: write
   id-token: write
   contents: read
+env:
+  TF_VAR_github_token: ${{ secrets.GH_TOKEN }}
 jobs:
   terraform-plan:
     if: github.event.action == 'opened' || github.event.action == 'synchronize'
-    name: "Terraform Plan"
+    name: Terraform Plan
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: infrastructure
     steps:
+      - uses: tatethurston/github-actions/aws-credentials@main
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::170683628345:role/Github-Action
+          role-session-name: github-action
       - uses: tatethurston/github-actions/terraform/plan@main
+        with:
+          aws-s3-bucket: tatethurston-terraform-state
+          directory: infrastructure
   terraform-apply:
     if: github.event.action == 'closed' && github.event.pull_request.merged == true
-    name: "Terraform Apply"
+    name: Terraform Apply
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: infrastructure
     steps:
+      - uses: tatethurston/github-actions/aws-credentials@main
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::170683628345:role/Github-Action
+          role-session-name: github-action
       - uses: tatethurston/github-actions/terraform/apply@main
+        with:
+          aws-s3-bucket: tatethurston-terraform-state
+          directory: infrastructure
