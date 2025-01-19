@@ -53,7 +53,8 @@ resource "aws_appautoscaling_policy" "scale_up" {
     cooldown        = 60
 
     step_adjustment {
-      scaling_adjustment = 1
+      scaling_adjustment          = 1
+      metric_interval_lower_bound = 0
     }
   }
 }
@@ -70,7 +71,8 @@ resource "aws_appautoscaling_policy" "scale_down" {
     cooldown        = 60
 
     step_adjustment {
-      scaling_adjustment = -1
+      scaling_adjustment          = -1
+      metric_interval_upper_bound = 0
     }
   }
 }
