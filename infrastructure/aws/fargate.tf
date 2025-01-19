@@ -2,8 +2,8 @@ resource "aws_ecs_cluster" "this" {
   name = "application-container-cluster"
 }
 
-resource "aws_ecs_service" "this" {
-  name            = "application-container-service"
+resource "aws_ecs_service" "application_servers" {
+  name            = "application-servers"
   cluster         = aws_ecs_cluster.this.id
   task_definition = aws_ecs_task_definition.this.arn
   desired_count   = 1
@@ -12,7 +12,24 @@ resource "aws_ecs_service" "this" {
   network_configuration {
     subnets          = [aws_subnet.us-west-2a.id]
     security_groups  = [aws_security_group.this.id]
-    assign_public_ip = true
+    assign_public_ip = false
+  }
+}
+
+resource "aws_ecs_service" "background_workers" {
+  name            = "background-workers"
+  cluster         = aws_ecs_cluster.this.id
+  task_definition = aws_ecs_task_definition.this.arn
+  desired_count   = 0
+  launch_type     = "FARGATE"
+
+  lifecycle {
+    ignore_changes = [desired_count]
+  }
+
+  network_configuration {
+    subnets          = [aws_subnet.us-west-2a.id]
+    assign_public_ip = false
   }
 }
 
