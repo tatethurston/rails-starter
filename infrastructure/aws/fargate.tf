@@ -5,7 +5,7 @@ resource "aws_ecs_cluster" "this" {
 resource "aws_ecs_service" "application_servers" {
   name            = "application-servers"
   cluster         = aws_ecs_cluster.this.id
-  task_definition = aws_ecs_task_definition.this.arn
+  task_definition = aws_ecs_task_definition.application_servers.arn
   desired_count   = 1
   launch_type     = "FARGATE"
 
@@ -16,7 +16,7 @@ resource "aws_ecs_service" "application_servers" {
   # }
 
   network_configuration {
-    subnets          = [aws_subnet.us-west-2a.id]
+    subnets          = [var.subnet_id]
     security_groups  = [aws_security_group.this.id]
     assign_public_ip = false
   }
@@ -25,7 +25,7 @@ resource "aws_ecs_service" "application_servers" {
 resource "aws_ecs_service" "background_workers" {
   name            = "background-workers"
   cluster         = aws_ecs_cluster.this.id
-  task_definition = aws_ecs_task_definition.this.arn
+  task_definition = aws_ecs_task_definition.background_workers.arn
   desired_count   = 0
   launch_type     = "FARGATE"
 
@@ -34,12 +34,12 @@ resource "aws_ecs_service" "background_workers" {
   }
 
   network_configuration {
-    subnets          = [aws_subnet.us-west-2a.id]
+    subnets          = [var.subnet_id]
     assign_public_ip = false
   }
 }
 
-resource "aws_ecs_task_definition" "this" {
+resource "aws_ecs_task_definition" "application_servers" {
   family                   = "rails-task"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
@@ -64,10 +64,36 @@ resource "aws_ecs_task_definition" "this" {
   }])
 }
 
+resource "aws_ecs_task_definition" "background_workers" {
+  family                   = "rails-task"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = aws_iam_role.ecs_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_role.arn
+
+  runtime_platform {
+    operating_system_family = "LINUX"
+    cpu_architecture        = "ARM64"
+  }
+
+  container_definitions = jsonencode([{
+    name    = "rails"
+    image   = "amazonlinux:2"
+    command = ["bin/jobs", "start"]
+    portMappings = [{
+      containerPort = 80
+      hostPort      = 80
+      protocol      = "tcp"
+    }]
+  }])
+}
+
 resource "aws_security_group" "this" {
   name        = "rails-sg"
   description = "Allow inbound HTTP and all outbound traffic"
-  vpc_id      = aws_vpc.this.id
+  vpc_id      = var.vpc_id
 
   ingress {
     from_port   = 80

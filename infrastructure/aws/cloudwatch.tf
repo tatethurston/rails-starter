@@ -1,4 +1,3 @@
-# bump
 resource "aws_cloudwatch_metric_alarm" "scale_up" {
   alarm_name          = "background-workers-scale-up"
   comparison_operator = "GreaterThanThreshold"
