@@ -1,8 +1,9 @@
 resource "aws_lb_target_group" "this" {
-  name     = "rails-starter-target-group"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.this.id
+  name        = "rails-starter-target-group"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.this.id
+  target_type = "ip"
 
   health_check {
     path                = "/"

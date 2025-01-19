@@ -18,7 +18,7 @@ resource "aws_cloudwatch_metric_alarm" "this" {
 resource "aws_appautoscaling_target" "this" {
   max_capacity       = 1
   min_capacity       = 0
-  resource_id        = aws_ecs_service.background_workers.id
+  resource_id        = "service/${aws_ecs_cluster.this.name}/${aws_ecs_service.background_workers.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }
