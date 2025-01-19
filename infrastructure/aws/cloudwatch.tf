@@ -1,5 +1,5 @@
-resource "aws_cloudwatch_metric_alarm" "this" {
-  alarm_name          = "sqs-queue-size-alarm"
+resource "aws_cloudwatch_metric_alarm" "scale_up" {
+  alarm_name          = "background-workers-scale-up"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = "1"
   metric_name         = "ApproximateNumberOfMessagesVisible"
@@ -12,7 +12,24 @@ resource "aws_cloudwatch_metric_alarm" "this" {
     QueueName = aws_sqs_queue.background_jobs.name
   }
 
-  alarm_actions = [aws_appautoscaling_policy.this.arn]
+  alarm_actions = [aws_appautoscaling_policy.scale_up.arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "scale_down" {
+  alarm_name          = "background-workers-scale-down"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "1"
+  metric_name         = "ApproximateNumberOfMessagesVisible"
+  namespace           = "AWS/SQS"
+  period              = "60"
+  statistic           = "Sum"
+  threshold           = 0
+  alarm_description   = "Alarm when SQS queue has atleast 1 message"
+  dimensions = {
+    QueueName = aws_sqs_queue.background_jobs.name
+  }
+
+  alarm_actions = [aws_appautoscaling_policy.scale_down.arn]
 }
 
 resource "aws_appautoscaling_target" "this" {
@@ -23,20 +40,36 @@ resource "aws_appautoscaling_target" "this" {
   service_namespace  = "ecs"
 }
 
-resource "aws_appautoscaling_policy" "this" {
-  name               = "background-workers-scale-up-policy"
-  policy_type        = "TargetTrackingScaling"
+resource "aws_appautoscaling_policy" "scale_up" {
+  name               = "scale-up-policy"
+  policy_type        = "StepScaling"
   resource_id        = aws_appautoscaling_target.this.resource_id
   scalable_dimension = aws_appautoscaling_target.this.scalable_dimension
   service_namespace  = aws_appautoscaling_target.this.service_namespace
 
-  target_tracking_scaling_policy_configuration {
-    target_value       = 1.0
-    scale_in_cooldown  = 60
-    scale_out_cooldown = 60
+  step_scaling_policy_configuration {
+    adjustment_type = "ChangeInCapacity"
+    cooldown        = 60
 
-    predefined_metric_specification {
-      predefined_metric_type = "SQSQueueMessagesVisible"
+    step_adjustment {
+      scaling_adjustment = 1
+    }
+  }
+}
+
+resource "aws_appautoscaling_policy" "scale_down" {
+  name               = "scale-down-policy"
+  policy_type        = "StepScaling"
+  resource_id        = aws_appautoscaling_target.this.resource_id
+  scalable_dimension = aws_appautoscaling_target.this.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.this.service_namespace
+
+  step_scaling_policy_configuration {
+    adjustment_type = "ChangeInCapacity"
+    cooldown        = 60
+
+    step_adjustment {
+      scaling_adjustment = -1
     }
   }
 }
