@@ -9,11 +9,11 @@ resource "aws_ecs_service" "application_servers" {
   desired_count   = 1
   launch_type     = "FARGATE"
 
-  load_balancer {
-    target_group_arn = aws_lb_target_group.this.arn
-    container_name   = jsondecode(aws_ecs_task_definition.this.container_definitions)[0].name
-    container_port   = 80
-  }
+  # load_balancer {
+  #   target_group_arn = aws_lb_target_group.this.arn
+  #   container_name   = jsondecode(aws_ecs_task_definition.this.container_definitions)[0].name
+  #   container_port   = 80
+  # }
 
   network_configuration {
     subnets          = [aws_subnet.us-west-2a.id]
